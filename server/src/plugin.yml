@@ -1,0 +1,18 @@
+name: LetMeReplace
+version: '${version}'
+main: dev.matt.letmereplace.server.LmrServer
+api-version: '26.2'
+description: Shares LetMeReplace schematics, their placement and their edits between chosen players.
+permissions:
+  lmr.share:
+    description: Share a schematic.
+    default: true
+  lmr.sync:
+    description: Accept a shared schematic and receive its edits.
+    default: true
+  lmr.edit:
+    description: Send edits to a shared schematic.
+    default: true
+  lmr.admin:
+    description: Remove any share, list every share.
+    default: op

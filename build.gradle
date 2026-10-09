@@ -1,0 +1,63 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/releases/'
+		content { includeGroup 'com.terraformersmc' }
+	}
+	mavenCentral()
+	maven {
+		name = 'Modrinth'
+		url = 'https://api.modrinth.com/maven'
+		content { includeGroup 'maven.modrinth' }
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	// No mappings block: Loom 1.15 defaults to official Mojang mappings, which is what
+	// Litematica and MaLiLib already ship as on 26.2. Nothing to remap, so no mod*
+	// configurations either - plain compileOnly/runtimeOnly is enough.
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	compileOnly "maven.modrinth:litematica:${project.litematica_version}"
+	compileOnly "maven.modrinth:malilib:${project.malilib_version}"
+	// fabric.mod.json hard-depends on both, so the dev client will not start without them.
+	runtimeOnly "maven.modrinth:litematica:${project.litematica_version}"
+	runtimeOnly "maven.modrinth:malilib:${project.malilib_version}"
+
+	// Mod Menu hosts the settings page. Optional at runtime - the mod works without it, so it is
+	// only on the classpath, never a dependency in fabric.mod.json.
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	runtimeOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// If the Modrinth maven stops serving these, drop the jars into libs/ and swap the
+	// compileOnly lines above for: compileOnly fileTree('libs')
+}
+
+processResources {
+	inputs.property 'version', project.version
+	filesMatching('fabric.mod.json') { expand version: inputs.properties.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+	// Minecraft 26.2 ships class-file version 69, so Java 25 is the floor.
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	withSourcesJar()
+	// No toolchain block: options.release pins the bytecode target, so any JDK 25+ builds this.
+}

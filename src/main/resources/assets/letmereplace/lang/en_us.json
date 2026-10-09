@@ -1,0 +1,19 @@
+{
+	"letmereplace.gui.button.replace": "Replace",
+	"letmereplace.config.hotkeys.name.openSettings": "Open settings",
+	"letmereplace.config.hotkeys.prettyName.openSettings": "Open settings",
+	"letmereplace.config.hotkeys.comment.openSettings": "Opens this screen",
+	"letmereplace.config.hotkeys.name.stackBox": "Stack box",
+	"letmereplace.config.hotkeys.prettyName.stackBox": "Stack box",
+	"letmereplace.config.hotkeys.comment.stackBox": "Hold, in the Box in schematic tool mode, and scroll\nto add copies of the box toward where you look",
+	"letmereplace.config.hotkeys.name.moveBox": "Move box",
+	"letmereplace.config.hotkeys.prettyName.moveBox": "Move box",
+	"letmereplace.config.hotkeys.comment.moveBox": "Hold, in the Box in schematic tool mode, and scroll\nto move the box toward where you look (sneak: a box length)",
+	"letmereplace.config.hotkeys.name.undo": "Undo",
+	"letmereplace.config.hotkeys.prettyName.undo": "Undo",
+	"letmereplace.config.hotkeys.comment.undo": "Undo the last change to the schematic edited last,\nor cancel a pending stack or move",
+	"letmereplace.config.hotkeys.name.redo": "Redo",
+	"letmereplace.config.hotkeys.prettyName.redo": "Redo",
+	"letmereplace.config.hotkeys.comment.redo": "Redo the last change Undo took back",
+	"letmereplace.hotkeys.category.box_tools": "Box tools"
+}

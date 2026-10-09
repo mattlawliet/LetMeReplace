@@ -1,0 +1,27 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "dev.matt.letmereplace.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"ButtonBaseAccessor",
+		"GuiBaseAccessor",
+		"LitematicaSchematicAccessor",
+		"LitematicaSchematicRegionsAccessor",
+		"SchematicMetadataAccessor",
+		"GuiMaterialListMixin",
+		"LitematicaInputHandlerMixin",
+		"LitematicaToolHotkeysMixin",
+		"SchematicPlacementMixin",
+		"SchematicUtilsMixin",
+		"ToolModeAccessor",
+		"ToolModeMixin",
+		"MaterialListPlacementAccessor",
+		"MaterialListPlacementMixin",
+		"MaterialListSchematicAccessor",
+		"WidgetMaterialListEntryMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

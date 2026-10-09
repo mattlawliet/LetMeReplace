@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "letmereplace",
+	"version": "${version}",
+	"name": "LetMeReplace",
+	"description": "Edit a loaded Litematica schematic in place: replace a material everywhere keeping each block's rotation and state, change a whole palette at once, and remove layers along any axis with a live preview. Nothing touches the original file until you save.",
+	"license": "LGPL-3.0-only",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.matt.letmereplace.LetMeReplace"
+		],
+		"modmenu": [
+			"dev.matt.letmereplace.ModMenuHook"
+		]
+	},
+	"mixins": [
+		"letmereplace.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"litematica": ">=0.28.4 <0.29",
+		"malilib": ">=0.29.3 <0.30"
+	}
+}
