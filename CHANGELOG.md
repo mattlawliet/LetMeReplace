@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- **Air no longer turns into stone.** A `.schem` loaded into Litematica keeps its own palette
+  order, and once saved as a `.litematic` Litematica read it back with every block shifted one
+  place: all the air became one block (stone, in the reported case) and the rest came back as
+  their neighbours. Files already saved this way load correctly again, and saving rewrites them
+  so plain Litematica reads them too.
+
 ## 0.6.0
 
 - **Shared schematics.** Shift-click the share button, pick players, and they sync with one

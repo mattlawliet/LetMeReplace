@@ -19,6 +19,8 @@
 		"MaterialListPlacementAccessor",
 		"MaterialListPlacementMixin",
 		"MaterialListSchematicAccessor",
+		"PaletteReadMixin",
+		"AirFirstOnSaveMixin",
 		"WidgetMaterialListEntryMixin"
 	],
 	"injectors": {
