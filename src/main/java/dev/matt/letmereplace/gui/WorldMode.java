@@ -162,6 +162,11 @@ public final class WorldMode {
         return true;
     }
 
+    /** Dev probe access to the same choice the mode makes. */
+    static SchematicPlacement placementUnderForProbe(BlockPos boxLo, BlockPos boxHi) {
+        return placementUnder(boxLo, boxHi);
+    }
+
     /** The selected placement when the box is over it, otherwise the first one that is. */
     private static SchematicPlacement placementUnder(BlockPos boxLo, BlockPos boxHi) {
         var manager = DataManager.getSchematicPlacementManager();
@@ -326,7 +331,27 @@ public final class WorldMode {
     }
 
     private static String executeKeys() {
-        return Hotkeys.EXECUTE_OPERATION.getKeybind().getKeysDisplayString();
+        return pretty(Hotkeys.EXECUTE_OPERATION.getKeybind().getKeysDisplayString());
+    }
+
+    /** "LEFT_CONTROL + LEFT_ALT + E" as a player writes it: "Ctrl+Alt+E". */
+    static String pretty(String keys) {
+        List<String> out = new ArrayList<>();
+
+        for (String key : keys.split("\\s*\\+\\s*")) {
+            String k = key.trim().replaceFirst("^(LEFT|RIGHT)_", "");
+            k = switch (k) {
+                case "CONTROL" -> "Ctrl";
+                case "ALT" -> "Alt";
+                case "SHIFT" -> "Shift";
+                case "SUPER" -> "Super";
+                default -> k.length() <= 1 ? k
+                        : k.charAt(0) + k.substring(1).toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+            };
+            out.add(k);
+        }
+
+        return String.join("+", out);
     }
 
     /** Litematica's tool in hand, in the Grid Paste slot. */
@@ -398,7 +423,7 @@ public final class WorldMode {
 
     private static String keyName(ConfigHotkey hotkey) {
         String keys = hotkey.getKeybind().getKeysDisplayString();
-        return keys.isBlank() ? "(unbound - set in LetMeReplace settings)" : keys;
+        return keys.isBlank() ? "(no key)" : pretty(keys);
     }
 
     /**
@@ -610,39 +635,41 @@ public final class WorldMode {
         public List<String> getText(RenderPhase phase) {
             List<String> lines = new ArrayList<>();
 
+            // Short lines: this shares the bottom of the screen with Litematica's tool HUD, and at
+            // GUI scale 4 long ones ran into it and the hotbar. Litematica already names the mode.
             if (kind == null) {
-                lines.add("[LetMeReplace] " + MODE_NAME);
-                lines.add("  left / right click: corner 1 / 2 on schematic blocks");
-                lines.add("  hold " + keyName(stackKey) + " + scroll: stack");
-                lines.add("  hold " + keyName(moveKey) + " + scroll: move (sneak: box length)");
-                lines.add("  " + executeKeys() + ": execute into the schematic");
+                lines.add("L / R click: box corners");
+                lines.add(keyName(stackKey) + " + scroll: stack");
+                lines.add(keyName(moveKey) + " + scroll: move");
+                lines.add(executeKeys() + ": execute");
                 return lines;
             }
 
-            Vec3i size = new Vec3i(hi.getX() - lo.getX() + 1, hi.getY() - lo.getY() + 1,
-                    hi.getZ() - lo.getZ() + 1);
-
-            lines.add("[LetMeReplace] " + (kind == Kind.STACK ? "Stack" : "Move")
-                    + (plan != null ? " - pending, not in the schematic yet" : ""));
-            lines.add("  " + label() + " - " + size.getX() + "x" + size.getY() + "x" + size.getZ()
-                    + " box");
+            lines.add((kind == Kind.STACK ? "Stack" : "Move") + (plan != null ? " - pending" : ""));
+            lines.add(label() + ", " + (hi.getX() - lo.getX() + 1) + "x" + (hi.getY() - lo.getY() + 1)
+                    + "x" + (hi.getZ() - lo.getZ() + 1));
 
             if (plan != null) {
                 Vec3i after = plan.sizeAfter();
-                lines.add("  " + (plan.grows() ? "grows to " + after.getX() + "x" + after.getY()
-                        + "x" + after.getZ() : "no growth") + " - overwrites " + plan.overwrites()
-                        + " - air: " + (BoxScreen.airReplaces ? "replaces" : "skipped"));
+                lines.add(plan.grows() ? "grows to " + after.getX() + "x" + after.getY() + "x"
+                        + after.getZ() : "no growth");
+                lines.add("overwrites " + plan.overwrites() + ", air "
+                        + (BoxScreen.airReplaces ? "replaces" : "skipped"));
 
                 if (!plan.wontSurvive().isEmpty()) {
-                    lines.add("  " + plan.wontSurvive().size() + " won't survive - execute to review");
+                    lines.add(plan.wontSurvive().size() + " won't survive");
                 }
             } else {
-                lines.add(kind == Kind.STACK ? "  scroll up to add a copy where you look"
-                        : "  scroll to move toward where you look, sneak for a box length");
+                lines.add(kind == Kind.STACK ? "scroll up: add a copy" : "scroll: move where you look");
             }
 
-            lines.add("  " + (latched ? "scroll" : "hold " + keyName(kind == Kind.STACK ? stackKey
-                    : moveKey) + " + scroll") + ": change   " + executeKeys() + ": execute   Esc: cancel");
+            if (kind == Kind.MOVE) {
+                lines.add("sneak: a box length");
+            }
+
+            lines.add((latched ? "" : keyName(kind == Kind.STACK ? stackKey : moveKey) + " + ")
+                    + "scroll: change");
+            lines.add(executeKeys() + ": execute, Esc: cancel");
             return lines;
         }
     }

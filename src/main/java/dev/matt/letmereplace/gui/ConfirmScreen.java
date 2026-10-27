@@ -46,7 +46,7 @@ public class ConfirmScreen extends GuiBase {
         int y = boxTop() + boxHeight() - 26;
 
         ButtonGeneric confirm = new ButtonGeneric(centreX - 104, y, 100, 20,
-                plan.convertsNothing() ? "Nothing to replace" : "Replace " + plan.replaced());
+                plan.convertsNothing() ? "Nothing to change" : String.format(commit.action(), plan.replaced()));
         confirm.setEnabled(!plan.convertsNothing());
         this.addButton(confirm, this::onConfirm);
 
@@ -98,9 +98,13 @@ public class ConfirmScreen extends GuiBase {
         return Math.min(340, this.width - 40);
     }
 
+    /** Sized to what it says: title, the count rows, the notes, the verdict, the buttons. */
     private int boxHeight() {
-        return 150 + commit.notes().size() * 10 + (scoped() ? 12 : 0)
-                + (Slabs.writesSlabs(plan) ? 24 : 0);
+        int rows = 1 + (plan.skipped() > 0 ? 1 : 0) + (plan.waterDropped() > 0 ? 1 : 0)
+                + (plan.nbtDropped() > 0 ? 1 : 0);
+
+        return 26 + (scoped() ? 12 : 0) + rows * 12 + commit.notes().size() * 10 + 6 + 10 + 14
+                + 26 + (Slabs.writesSlabs(plan) ? 24 : 0);
     }
 
     /** Whether a layer selection is confining this swap - both gestures reach the same confirm. */
@@ -140,7 +144,7 @@ public class ConfirmScreen extends GuiBase {
             y += 12;
         }
 
-        this.drawString(context, "replaced", x, y, Ui.GREY);
+        this.drawString(context, "changes", x, y, Ui.GREY);
         this.drawString(context, String.valueOf(plan.replaced()), x + 120, y, Ui.GREEN);
         y += 12;
 
@@ -178,8 +182,8 @@ public class ConfirmScreen extends GuiBase {
         } else if (plan.isLossless()) {
             this.drawString(context, "Nothing is lost.", x, y, Ui.GREEN);
         } else {
-            this.drawString(context, "This cannot be undone - save is the commit point.", x, y,
-                    Ui.GOLD);
+            this.drawString(context, trim("Some data is dropped - undo is on the material list.",
+                    boxWidth() - 16), x, y, Ui.GOLD);
         }
     }
 

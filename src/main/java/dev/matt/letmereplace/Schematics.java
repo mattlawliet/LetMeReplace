@@ -95,6 +95,68 @@ public final class Schematics {
 
         manager.markAllPlacementsOfSchematicForRebuild(schematic);
         manager.setVisibleSubChunksNeedsUpdate();
+
+        unsettled.add(schematic);
+        quietTicks = 0;
+    }
+
+    /**
+     * Schematics changed since Litematica last went quiet. Litematica rebuilds chunks on several
+     * worker threads, and marking a chunk again only drops the <em>queued</em> task for it, not
+     * one already running - so a preview taken off and put back on in the same tick could have
+     * the take-off's rebuild finish last and leave the old blocks drawn (probe 2026-10-27: 108
+     * and 504 stale blocks on two of seven move previews, none after Execute). One more rebuild,
+     * once the queue has been empty a while, runs alone and reads the final data.
+     */
+    private static final java.util.Set<LitematicaSchematic> unsettled =
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static int quietTicks;
+    /** Single chunks marked by hand - ones no placement touches any more after a shrink. */
+    private static final java.util.Set<net.minecraft.world.level.ChunkPos> unsettledChunks =
+            new java.util.HashSet<>();
+
+    /** One chunk rebuilt now and again once Litematica goes quiet, like {@link #refreshRender}. */
+    public static void rebuildChunk(net.minecraft.world.level.ChunkPos chunk) {
+        DataManager.getSchematicPlacementManager().markChunkForRebuild(chunk);
+        unsettledChunks.add(chunk);
+        quietTicks = 0;
+    }
+
+    /** Ticks the daemon's queue must stay empty before the settling rebuild. */
+    private static final int SETTLE_TICKS = 6;
+
+    public static void register() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK
+                .register(mc -> settle());
+    }
+
+    private static void settle() {
+        if (unsettled.isEmpty() && unsettledChunks.isEmpty()) {
+            return;
+        }
+
+        if (fi.dy.masa.litematica.schematic.placement.PlacementManagerDaemonHandler.INSTANCE.hasTasks()) {
+            quietTicks = 0;
+            return;
+        }
+
+        if (++quietTicks < SETTLE_TICKS) {
+            return;
+        }
+
+        SchematicPlacementManager manager = DataManager.getSchematicPlacementManager();
+
+        for (LitematicaSchematic schematic : unsettled) {
+            manager.markAllPlacementsOfSchematicForRebuild(schematic);
+        }
+
+        for (net.minecraft.world.level.ChunkPos chunk : unsettledChunks) {
+            manager.markChunkForRebuild(chunk);
+        }
+
+        manager.setVisibleSubChunksNeedsUpdate();
+        unsettled.clear();
+        unsettledChunks.clear();
     }
 
     /**

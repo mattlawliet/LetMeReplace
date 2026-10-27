@@ -229,21 +229,25 @@ public class BoxScreen extends GuiBase {
             y += 42;
         }
 
-        this.addButton(new ButtonGeneric(x, y, 80, 20, "Cancel"),
-                (button, mouseButton) -> this.closeGui(true));
+        // Cancel last, as on every other LetMeReplace screen: actions first, the way out after.
+        int cancelX = x;
 
         if (problem == null) {
-            ButtonGeneric stackInWorld = new ButtonGeneric(x + 84, y, -1, 20, "Stack in world...");
+            ButtonGeneric stackInWorld = new ButtonGeneric(x, y, -1, 20, "Stack in world...");
             stackInWorld.setHoverStrings("Scroll to add copies toward where you look",
                     "Litematica's Execute operation keeps it, Escape puts it back");
             this.addButton(stackInWorld, (button, mouseButton) -> toWorld(WorldMode.Kind.STACK));
 
-            ButtonGeneric moveInWorld = new ButtonGeneric(x + 88 + stackInWorld.getWidth(), y, -1,
+            ButtonGeneric moveInWorld = new ButtonGeneric(x + 4 + stackInWorld.getWidth(), y, -1,
                     20, "Move in world...");
             moveInWorld.setHoverStrings("Scroll to move the box toward where you look",
                     "Sneak to move a whole box length per notch");
             this.addButton(moveInWorld, (button, mouseButton) -> toWorld(WorldMode.Kind.MOVE));
+            cancelX = moveInWorld.getX() + moveInWorld.getWidth() + 4;
         }
+
+        this.addButton(new ButtonGeneric(cancelX, y, 80, 20, "Cancel"),
+                (button, mouseButton) -> this.closeGui(true));
 
         ButtonGeneric settings = new ButtonGeneric(this.width - 10 - 70, this.height - 30, 70, 20,
                 "Settings...");

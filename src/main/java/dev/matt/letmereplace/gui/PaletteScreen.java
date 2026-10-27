@@ -57,6 +57,9 @@ public class PaletteScreen extends GuiBase {
      */
     private boolean needsRebuild;
 
+    /** x, y, w, h of the chosen button in each column, ringed in drawTitle. */
+    private final int[][] chosen = new int[3][];
+
     public PaletteScreen(LitematicaSchematic schematic, MaterialListBase materialList) {
         this.schematic = schematic;
         this.materialList = materialList;
@@ -95,11 +98,15 @@ public class PaletteScreen extends GuiBase {
     // ------------------------------------------------------------------------ layout
 
     private int columnWidth() {
-        return Math.max(90, (this.width - Ui.MARGIN * 2 - 40) / 3);
+        return Math.max(90, (panelWidth() - 40) / 3);
     }
 
     private int columnX(int index) {
-        return Ui.MARGIN + 10 + index * (columnWidth() + 10);
+        return Ui.left(this.width) + 10 + index * (columnWidth() + 10);
+    }
+
+    private int panelWidth() {
+        return this.width - Ui.left(this.width) * 2;
     }
 
     private int columnTop() {
@@ -113,6 +120,7 @@ public class PaletteScreen extends GuiBase {
     @Override
     public void initGui() {
         super.initGui();
+        java.util.Arrays.fill(chosen, null);
 
         if (present.isEmpty()) {
             this.addButton(new ButtonGeneric(this.width / 2 - 50, this.height / 2 + 20, 100, 20,
@@ -126,7 +134,11 @@ public class PaletteScreen extends GuiBase {
         for (Palette.Present option : present) {
             ButtonGeneric button = new ButtonGeneric(columnX(0), y, columnWidth(), 16,
                     option.axis().name() + "  (" + option.total() + ")");
-            button.setEnabled(option != axis);
+            // Chosen stays enabled and gets a ring: a darkened button reads as unavailable.
+            if (option == axis) {
+                chosen[0] = new int[]{columnX(0), y, columnWidth(), 16};
+            }
+
             this.addButton(button, (b, m) -> {
                 selectAxis(option);
                 this.initGui();
@@ -180,7 +192,7 @@ public class PaletteScreen extends GuiBase {
         Palette.Change change = currentChange();
 
         ButtonGeneric apply = new ButtonGeneric(this.width / 2 - 104, buttonY, 100, 20,
-                change.isEmpty() ? "Nothing to change" : "Change " + change.pairs().size() + " blocks");
+                change.isEmpty() ? "Nothing to change" : "Change " + blocksIn(change) + " blocks");
         apply.setEnabled(!change.isEmpty());
         this.addButton(apply, this::onApply);
 
@@ -191,7 +203,10 @@ public class PaletteScreen extends GuiBase {
     private int addValueButton(int column, int y, String value, String label,
                                Runnable onPick, boolean selected) {
         ButtonGeneric button = new ButtonGeneric(columnX(column), y, columnWidth(), 16, label);
-        button.setEnabled(!selected);
+        if (selected) {
+            chosen[column] = new int[]{columnX(column), y, columnWidth(), 16};
+        }
+
         this.addButton(button, (b, m) -> {
             onPick.run();
             this.initGui();
@@ -315,7 +330,7 @@ public class PaletteScreen extends GuiBase {
 
         // A8: name what has no counterpart rather than burying it in a total.
         for (Block block : change.noCounterpart()) {
-            notes.add("no " + Axis.pretty(target) + " counterpart: " + Axis.path(block));
+            notes.add("no " + Axis.pretty(target) + " counterpart: " + block.getName().getString());
         }
 
         String title = axis.axis().name() + ": "
@@ -338,24 +353,35 @@ public class PaletteScreen extends GuiBase {
 
         RenderUtils.drawRect(context, 0, 0, this.width, this.height, Ui.SHADE);
 
-        int w = this.width - Ui.MARGIN * 2;
+        int left = Ui.left(this.width);
+        int w = panelWidth();
         int h = this.height - Ui.MARGIN * 2;
 
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN, w, h, Ui.PANEL);
-        RenderUtils.drawOutline(context, Ui.MARGIN - 1, Ui.MARGIN - 1, w + 2, h + 2, Ui.EDGE);
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN, w, Ui.TITLE_H, Ui.HEADER_BG);
-        RenderUtils.drawRect(context, Ui.MARGIN, gridTop() - 4, w, 52, Ui.PANEL_ALT);
+        RenderUtils.drawRect(context, left, Ui.MARGIN, w, h, Ui.PANEL);
+        RenderUtils.drawOutline(context, left - 1, Ui.MARGIN - 1, w + 2, h + 2, Ui.EDGE);
+        RenderUtils.drawRect(context, left, Ui.MARGIN, w, Ui.TITLE_H, Ui.HEADER_BG);
+        RenderUtils.drawRect(context, left, gridTop() - 4, w, 52, Ui.PANEL_ALT);
     }
 
     @Override
     protected void drawTitle(GuiContext context, int mouseX, int mouseY, float partialTicks) {
-        this.drawString(context, this.getTitleString(), Ui.MARGIN + 5, Ui.MARGIN + 4, Ui.WHITE);
+        int left = Ui.left(this.width);
+        this.drawString(context, this.getTitleString(), left + 5, Ui.MARGIN + 4, Ui.WHITE);
 
         if (present.isEmpty()) {
             this.drawString(context, "Nothing in this schematic sits on a changeable axis.",
-                    Ui.MARGIN + 10, this.height / 2 - 10, Ui.GREY);
+                    left + 10, this.height / 2 - 10, Ui.GREY);
             return;
         }
+
+        for (int[] box : chosen) {
+            Ui.ring(context, box);
+        }
+
+        this.drawString(context, "ENTER  change", left + 8, this.height - Ui.MARGIN - 18, Ui.GREY);
+        String esc = "ESC  back";
+        this.drawString(context, esc, left + panelWidth() - 8 - this.getStringWidth(esc),
+                this.height - Ui.MARGIN - 18, Ui.GREY);
 
         this.drawString(context, "AXIS", columnX(0), columnTop() - 11, Ui.GREY);
         drawColumnHead(context, 1, "FROM",
@@ -375,7 +401,7 @@ public class PaletteScreen extends GuiBase {
         int below = Math.max(0, total - scroll - shown);
 
         if (scroll > 0 || below > 0) {
-            String note = (scroll > 0 ? "\u25b2" + scroll + " " : "") + (below > 0 ? "\u25bc" + below : "");
+            String note = (scroll > 0 ? scroll + " above  " : "") + (below > 0 ? below + " below" : "");
             this.drawString(context, note.trim(),
                     columnX(column) + columnWidth() - this.getStringWidth(note.trim()),
                     columnTop() - 11, Ui.GOLD);
@@ -389,7 +415,7 @@ public class PaletteScreen extends GuiBase {
      */
     private void drawPreviewGrid(GuiContext context) {
         Palette.Change change = currentChange();
-        int x = Ui.MARGIN + 8;
+        int x = Ui.left(this.width) + 8;
         int y = gridTop();
 
         if (change.isEmpty()) {
@@ -397,13 +423,14 @@ public class PaletteScreen extends GuiBase {
             return;
         }
 
-        this.drawString(context, change.pairs().size() + " blocks change"
+        this.drawString(context, blocksIn(change) + " blocks change, " + change.pairs().size()
+                + (change.pairs().size() == 1 ? " material" : " materials")
                 + (change.noCounterpart().isEmpty()
                         ? ""
                         : ", " + change.noCounterpart().size() + " have no counterpart"),
                 x, y - 12, change.noCounterpart().isEmpty() ? Ui.GREEN : Ui.GOLD);
 
-        int perRow = Math.max(1, (this.width - Ui.MARGIN * 2 - 16) / 40);
+        int perRow = Math.max(1, (panelWidth() - 16) / 40);
 
         for (int i = 0; i < change.pairs().size(); ++i) {
             if (i >= perRow * 2) {
@@ -422,6 +449,36 @@ public class PaletteScreen extends GuiBase {
             this.drawString(context, ">", px + 17, py + 4, Ui.GREY);
             drawIconAt(context, pair.to(), px + 23, py);
         }
+    }
+
+    /** Blocks, not materials: what the change actually touches in the schematic. */
+    private int blocksIn(Palette.Change change) {
+        java.util.Set<Block> from = new java.util.HashSet<>();
+
+        for (Palette.Pair pair : change.pairs()) {
+            from.add(pair.from());
+        }
+
+        int blocks = 0;
+
+        for (var entry : census.counts().entrySet()) {
+            if (from.contains(entry.getKey().getBlock())) {
+                blocks += entry.getValue();
+            }
+        }
+
+        return blocks;
+    }
+
+    @Override
+    public boolean onKeyTyped(net.minecraft.client.input.KeyEvent event) {
+        if ((event.key() == 257 || event.key() == 335) && !present.isEmpty()
+                && !currentChange().isEmpty()) {                  // Enter, numpad Enter
+            onApply(null, 0);
+            return true;
+        }
+
+        return super.onKeyTyped(event);
     }
 
     private void drawIconAt(GuiContext context, Block block, int x, int y) {

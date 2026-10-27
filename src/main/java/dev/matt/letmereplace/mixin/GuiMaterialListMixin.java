@@ -1,7 +1,5 @@
 package dev.matt.letmereplace.mixin;
 
-import dev.matt.letmereplace.Census;
-import dev.matt.letmereplace.Commit;
 import dev.matt.letmereplace.Normalize;
 import dev.matt.letmereplace.Pending;
 import dev.matt.letmereplace.Swap;
@@ -22,7 +20,6 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.litematica.gui.GuiMaterialList;
 import fi.dy.masa.litematica.materials.MaterialListBase;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic;
-import fi.dy.masa.malilib.gui.MaLiLibIcons;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.StringUtils;
@@ -55,6 +52,14 @@ public abstract class GuiMaterialListMixin {
 
     @Unique
     private static final int TITLE_ROW_H = 16;
+
+    /** Litematica's title as it was set, before any trim to fit beside our buttons. */
+    @Unique
+    private String letmereplace$fullTitle;
+
+    /** Where malilib draws the title (GuiBase.drawTitle). */
+    @Unique
+    private static final int TITLE_X = 20;
 
 
     /**
@@ -96,10 +101,7 @@ public abstract class GuiMaterialListMixin {
                 "Their bark is the same on all six faces, so the axis only shows in the hand");
 
         gui.addButton(normalize, (button, mouseButton) -> {
-            Census census = Census.of(schematic);
-
-            Screens.open(new ConfirmScreen(new Commit("Normalize wood orientation", schematic,
-                    gui.getMaterialList(), Normalize.plan(census), Normalize.notes(census))), gui);
+            Screens.open(new ConfirmScreen(Normalize.commit(schematic, gui.getMaterialList())), gui);
         });
     }
 
@@ -109,7 +111,7 @@ public abstract class GuiMaterialListMixin {
      * <p>It used to sit beside the palette button on the top row, where there is no room for it:
      * the multiplier field starts where that row's free space ends, and the arrow was drawn behind
      * it. Icon-only with hover text either way. Neither malilib nor Litematica ships a back or
-     * curved arrow, so this is the plain up arrow.
+     * curved arrow, so GlyphButton draws one.
      */
     @Unique
     private static void addUndoButton(GuiMaterialList gui, LitematicaSchematic schematic,
@@ -128,7 +130,7 @@ public abstract class GuiMaterialListMixin {
                 ? "Nothing to undo"
                 : depth > 1 ? "Undo: " + what + "  (" + (depth - 1) + " more)" : "Undo: " + what;
 
-        ButtonGeneric undo = new ButtonGeneric(x, y, MaLiLibIcons.ARROW_UP, hover);
+        GlyphButton undo = new GlyphButton(x, y, GlyphButton.Glyph.UNDO, hover);
         undo.setEnabled(available);
 
         gui.addButton(undo, (button, mouseButton) -> {
@@ -279,6 +281,26 @@ public abstract class GuiMaterialListMixin {
             x -= 4 + width;
             addScopeButton(gui, x, y, width);
         }
+
+        // A long placement name ran under the group. The title is the one thing on the row that
+        // can give, so it is cut to the space left - from the full title each time, so a wider
+        // window gets the words back.
+        if (letmereplace$fullTitle == null) {
+            letmereplace$fullTitle = gui.getTitleString();
+        }
+
+        int room = x - 8 - TITLE_X;
+        String title = letmereplace$fullTitle;
+
+        if (gui.getStringWidth(title) > room) {
+            while (title.length() > 1 && gui.getStringWidth(title + "...") > room) {
+                title = title.substring(0, title.length() - 1);
+            }
+
+            title = title.stripTrailing() + "...";
+        }
+
+        gui.setTitle(title);
 
         // After the button exists, not before: logging x while it still held its previous value
         // reported 0 on every first open, which reads as "off-screen" and sent me chasing a

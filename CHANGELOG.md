@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.2
+
+- **Box previews show exactly what Execute will do.** Moving or stacking with the scroll wheel
+  could leave some of the unmoved blocks drawn in the preview until Execute. The data was right;
+  Litematica's chunk redraw lost a race between taking the old preview off and putting the new
+  one on. The schematic is now redrawn once more after every change, once Litematica goes quiet.
+- **Change palette** marks your choice with a ring instead of greying it out like a disabled
+  button. It counts blocks, not block types ("Change 43 blocks"), and Enter applies.
+- **Replace picker:** a long block state wraps instead of losing its end. Enter with nothing
+  typed no longer picks Delete (air).
+- **Normalize** asks "Turn 50 upright" and names blocks the way the material list does.
+- **Real checkboxes** on Save and in the share picker. Share stays greyed out until someone is
+  ticked, and the share search box's cursor no longer sits in the corner of the screen.
+- **Material list:** a proper undo arrow; the buttons show hover and greyed-out states; a long
+  placement name is shortened instead of running under the buttons.
+- **Box in schematic HUD:** shorter lines and readable key names ("Ctrl+Alt+E"), clear of the
+  hotbar and Litematica's own HUD at large GUI scales.
+- Wide screens keep the picker and palette centred instead of stretched; Box puts Cancel last
+  like every other screen; the Layers screen no longer flashes Litematica's layer-mode message.
+
 ## 0.6.1
 
 - **Air no longer turns into stone.** A `.schem` loaded into Litematica keeps its own palette

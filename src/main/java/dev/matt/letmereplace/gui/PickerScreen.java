@@ -53,12 +53,16 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
 
     @Override
     protected int getBrowserWidth() {
-        return this.width - (Ui.MARGIN * 2) - previewWidth() - 6;
+        return panelWidth() - previewWidth() - 6;
     }
 
     @Override
     protected int getBrowserHeight() {
         return this.height - LIST_Y - Ui.MARGIN - Ui.FOOTER_H;
+    }
+
+    private int panelWidth() {
+        return this.width - Ui.left(this.width) * 2;
     }
 
     private int previewWidth() {
@@ -67,6 +71,7 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
 
     @Override
     public void initGui() {
+        this.setListPosition(Ui.left(this.width) + 2, LIST_Y);
         super.initGui();
         // P6: the field takes focus on open, which is what makes a five-material conversion
         // typeable rather than clickable.
@@ -116,7 +121,9 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
     @Override
     public boolean onKeyTyped(KeyEvent event) {
         if (event.key() == 257 || event.key() == 335) {          // Enter, numpad Enter
-            pick(this.getListWidget().topEntry());
+            // With nothing typed the top row is Delete (air), and Enter is too easy a key to
+            // spend on that - unfiltered, it picks only a row the mouse chose.
+            pick(lastQuery == null || lastQuery.isBlank() ? selected : this.getListWidget().topEntry());
             return true;
         }
 
@@ -129,16 +136,17 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
     protected void drawScreenBackground(GuiContext context, int mouseX, int mouseY) {
         RenderUtils.drawRect(context, 0, 0, this.width, this.height, Ui.SHADE);
 
-        int w = this.width - Ui.MARGIN * 2;
+        int left = Ui.left(this.width);
+        int w = panelWidth();
         int h = this.height - Ui.MARGIN * 2;
 
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN, w, h, Ui.PANEL);
-        RenderUtils.drawOutline(context, Ui.MARGIN - 1, Ui.MARGIN - 1, w + 2, h + 2, Ui.EDGE);
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN, w, Ui.TITLE_H, Ui.HEADER_BG);
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN + Ui.TITLE_H, w, Ui.SEARCH_H, Ui.PANEL_ALT);
-        RenderUtils.drawRect(context, Ui.MARGIN, Ui.MARGIN + h - Ui.FOOTER_H, w, Ui.FOOTER_H, Ui.HEADER_BG);
+        RenderUtils.drawRect(context, left, Ui.MARGIN, w, h, Ui.PANEL);
+        RenderUtils.drawOutline(context, left - 1, Ui.MARGIN - 1, w + 2, h + 2, Ui.EDGE);
+        RenderUtils.drawRect(context, left, Ui.MARGIN, w, Ui.TITLE_H, Ui.HEADER_BG);
+        RenderUtils.drawRect(context, left, Ui.MARGIN + Ui.TITLE_H, w, Ui.SEARCH_H, Ui.PANEL_ALT);
+        RenderUtils.drawRect(context, left, Ui.MARGIN + h - Ui.FOOTER_H, w, Ui.FOOTER_H, Ui.HEADER_BG);
 
-        int panelX = Ui.MARGIN + w - previewWidth();
+        int panelX = left + w - previewWidth();
         RenderUtils.drawRect(context, panelX, LIST_Y, previewWidth(),
                 h - Ui.TITLE_H - Ui.SEARCH_H - Ui.FOOTER_H, Ui.PANEL_ALT);
         RenderUtils.drawRect(context, panelX - 1, LIST_Y, 1,
@@ -147,11 +155,12 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
 
     @Override
     protected void drawTitle(GuiContext context, int mouseX, int mouseY, float partialTicks) {
-        this.drawString(context, this.getTitleString(), Ui.MARGIN + 5, Ui.MARGIN + 4, Ui.WHITE);
+        int left = Ui.left(this.width);
+        this.drawString(context, this.getTitleString(), left + 5, Ui.MARGIN + 4, Ui.WHITE);
 
-        String scope = session.totalPositions() + " positions";
+        String scope = session.totalPositions() + (session.totalPositions() == 1 ? " position" : " positions");
         this.drawString(context, scope,
-                Ui.MARGIN + this.width - Ui.MARGIN * 2 - 5 - this.getStringWidth(scope),
+                left + panelWidth() - 5 - this.getStringWidth(scope),
                 Ui.MARGIN + 4, Ui.GREY);
 
         drawPreviewPanel(context);
@@ -170,7 +179,7 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
             return;
         }
 
-        int x = Ui.MARGIN + (this.width - Ui.MARGIN * 2) - previewWidth() + 6;
+        int x = Ui.left(this.width) + panelWidth() - previewWidth() + 6;
         int y = LIST_Y + 6;
         int maxWidth = previewWidth() - 12;
 
@@ -192,8 +201,7 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
 
         this.drawString(context, "FROM", x, y, Ui.GREY);
         y += 10;
-        this.drawString(context, trim(describe(session.modalState()), maxWidth), x, y, Ui.WHITE);
-        y += 14;
+        y = drawWrapped(context, describe(session.modalState()), x, y, maxWidth, Ui.WHITE) + 4;
 
         this.drawString(context, "TO", x, y, Ui.GREY);
         y += 10;
@@ -201,7 +209,7 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
         if (result == null) {
             this.drawString(context, "no legal state", x, y, Ui.RED);
         } else {
-            this.drawString(context, trim(describe(result), maxWidth), x, y, Ui.WHITE);
+            y = drawWrapped(context, describe(result), x, y, maxWidth, Ui.WHITE) - 10;
         }
 
         y += 18;
@@ -210,21 +218,21 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
         String verdict = counted[1] == 0
                 ? "converts all " + counted[0]
                 : "converts " + counted[0] + ", skips " + counted[1];
-        this.drawString(context, verdict, x, y, counted[1] == 0 ? Ui.GREEN : Ui.GOLD);
+        y = drawWrapped(context, verdict, x, y, maxWidth, counted[1] == 0 ? Ui.GREEN : Ui.GOLD);
 
         if (session.sourceStates().size() > 1) {
-            this.drawString(context, "preview: most common state", x, y + 12, Ui.GREY);
+            drawWrapped(context, "preview: most common state", x, y + 2, maxWidth, Ui.GREY);
         }
     }
 
     private void drawFooter(GuiContext context) {
+        int left = Ui.left(this.width);
         int y = Ui.MARGIN + (this.height - Ui.MARGIN * 2) - Ui.FOOTER_H + 3;
-        this.drawString(context, "TYPE  filter", Ui.MARGIN + 6, y, Ui.GREY);
-        this.drawString(context, "ENTER  pick top", Ui.MARGIN + 80, y, Ui.GREY);
+        String keys = "TYPE  filter    ENTER  pick top match";
+        this.drawString(context, keys, left + 6, y, Ui.GREY);
 
-        String hint = "ESC  back to the material list";
-        this.drawString(context, hint,
-                Ui.MARGIN + (this.width - Ui.MARGIN * 2) - 6 - this.getStringWidth(hint), y, Ui.GREY);
+        String hint = "ESC  back";
+        this.drawString(context, hint, left + panelWidth() - 6 - this.getStringWidth(hint), y, Ui.GREY);
     }
 
     private Candidate firstRanked() {
@@ -242,6 +250,34 @@ public class PickerScreen extends GuiListBase<Candidate, WidgetCandidate, Candid
         }
 
         return text.replace("minecraft:", "").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Draws {@code text} broken at commas, spaces or anywhere as a last resort, so a long block
+     * state wraps instead of losing its tail. Returns the y below the last line.
+     */
+    private int drawWrapped(GuiContext context, String text, int x, int y, int maxWidth, int colour) {
+        String rest = text;
+
+        while (!rest.isEmpty()) {
+            String line = trim(rest, maxWidth);
+
+            if (line.length() < rest.length()) {
+                // After a comma or space, or before the [ that opens the properties.
+                int cut = Math.max(Math.max(line.lastIndexOf(',') + 1, line.lastIndexOf(' ') + 1),
+                        line.lastIndexOf('['));
+
+                if (cut > 0) {
+                    line = line.substring(0, cut);
+                }
+            }
+
+            this.drawString(context, line.stripTrailing(), x, y, colour);
+            rest = rest.substring(line.length()).stripLeading();
+            y += 10;
+        }
+
+        return y;
     }
 
     private String trim(String text, int maxWidth) {

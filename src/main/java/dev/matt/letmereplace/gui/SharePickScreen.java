@@ -46,8 +46,6 @@ public class SharePickScreen extends GuiBase {
     private String lastSearch = "";
     /** Editing: the server's list, once it has arrived and been ticked in. */
     private Map<String, String> members;
-    /** Whether the first tick's second layout has run - see {@link #tick()}. */
-    private boolean settled;
 
     /** A new share. */
     public SharePickScreen(LitematicaSchematic schematic, SchematicPlacement placement) {
@@ -150,6 +148,10 @@ public class SharePickScreen extends GuiBase {
 
         search.setX(x);
         search.setY(y);
+        // malilib's setX/setY skip EditBox's, which is what places the text and cursor - left
+        // alone they sit at (0, 0), the stray cursor in the screen corner. setValue re-places
+        // them through the overridden getX/getY.
+        search.setValue(search.getValue());
         this.addTextField(search, field -> {
             // Rebuilt on the next tick rather than here: this runs inside malilib's own walk
             // over the text fields, which a rebuild would change under it.
@@ -166,8 +168,8 @@ public class SharePickScreen extends GuiBase {
         String byName = byName();
 
         if (byName != null && y <= bottom) {
-            this.addButton(new ButtonGeneric(x, y, width, 20, label(byName) + "  (invite by name)"),
-                    (button, mouseButton) -> toggle(byName));
+            this.addButton(new CheckButton(x, y + 3, width, label(byName) + "  (invite by name)",
+                    () -> picked.contains(byName)), (button, mouseButton) -> toggle(byName));
             y += ROW_H;
         }
 
@@ -176,7 +178,7 @@ public class SharePickScreen extends GuiBase {
                 break;
             }
 
-            this.addButton(new ButtonGeneric(x, y, width, 20, label(name)),
+            this.addButton(new CheckButton(x, y + 3, width, label(name), () -> picked.contains(name)),
                     (button, mouseButton) -> toggle(name));
             y += ROW_H;
         }
@@ -191,7 +193,10 @@ public class SharePickScreen extends GuiBase {
             this.addButton(new ButtonGeneric(centreX + 54, y, 100, 20, "Cancel"),
                     (button, mouseButton) -> this.closeGui(true));
         } else {
-            this.addButton(new ButtonGeneric(centreX - 104, y, 100, 20, "Share"), this::onShare);
+            ButtonGeneric share = new ButtonGeneric(centreX - 104, y, 100, 20, "Share");
+            share.setEnabled(!picked.isEmpty());
+            share.setHoverStrings(picked.isEmpty() ? "Tick at least one player" : "Send each a [Sync] link");
+            this.addButton(share, this::onShare);
             this.addButton(new ButtonGeneric(centreX + 4, y, 100, 20, "Cancel"),
                     (button, mouseButton) -> this.closeGui(true));
         }
@@ -200,12 +205,7 @@ public class SharePickScreen extends GuiBase {
     @Override
     public void tick() {
         super.tick();
-        // The search box's blinking cursor sat in a corner of the screen until the screen was
-        // laid out a second time (reported 2026-10-07; it fixed itself when the member list
-        // arrived and rebuilt the screen). ponytail: lay out once more on the first tick rather
-        // than chase which cached position the first pass leaves stale.
-        boolean rebuild = !settled;
-        settled = true;
+        boolean rebuild = false;
 
         if (search != null && !search.getValue().equals(lastSearch)) {
             lastSearch = search.getValue();
@@ -248,7 +248,7 @@ public class SharePickScreen extends GuiBase {
             default -> "";
         };
 
-        return (picked.contains(name) ? "[x] " : "[ ] ") + name + note;
+        return name + note;
     }
 
     private void onShare(ButtonBase button, int mouseButton) {

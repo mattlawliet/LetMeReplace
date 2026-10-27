@@ -36,7 +36,9 @@ public class GlyphButton extends ButtonGeneric {
         /** Three linked nodes, one on the left feeding two on the right - share. */
         SHARE,
         /** The share nodes in green - this schematic is shared and syncing. */
-        SHARED
+        SHARED,
+        /** A hooked arrow turning back on itself - undo. */
+        UNDO
     }
 
     public static final int SIZE = 16;
@@ -76,7 +78,28 @@ public class GlyphButton extends ButtonGeneric {
             case BOX -> renderBox(context, x, y);
             case SHARE -> renderShare(context, x, y, BODY);
             case SHARED -> renderShare(context, x, y, SYNCED);
+            case UNDO -> renderUndo(context, x, y);
         }
+
+        // No button face, so the states are drawn here: a ring on hover, dimmed when disabled -
+        // a Save with nothing to save used to look exactly like one with something to save.
+        if (!this.enabled) {
+            RenderUtils.drawRect(context, x, y, SIZE, SIZE, Ui.DIM);
+        } else if (this.isMouseOver(mouseX, mouseY)) {
+            RenderUtils.drawOutline(context, x - 1, y - 1, SIZE + 2, SIZE + 2, Ui.LABEL);
+        }
+    }
+
+    private void renderUndo(GuiContext context, int x, int y) {
+        // Arrowhead pointing left, stepped out of three columns.
+        RenderUtils.drawRect(context, x + 1, y + 5, 1, 2, BODY);
+        RenderUtils.drawRect(context, x + 2, y + 4, 1, 4, BODY);
+        RenderUtils.drawRect(context, x + 3, y + 3, 1, 6, BODY);
+
+        // The shaft runs right, turns down and comes back: the hook that says "back".
+        RenderUtils.drawRect(context, x + 4, y + 5, 8, 2, BODY);
+        RenderUtils.drawRect(context, x + 11, y + 5, 2, 7, BODY);
+        RenderUtils.drawRect(context, x + 5, y + 10, 7, 2, BODY);
     }
 
     private void renderSave(GuiContext context, int x, int y) {

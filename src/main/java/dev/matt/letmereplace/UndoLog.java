@@ -474,7 +474,7 @@ public final class UndoLog {
                 world.unloadEntitiesByChunk(chunk.x(), chunk.z());
             }
 
-            DataManager.getSchematicPlacementManager().markChunkForRebuild(chunk);
+            Schematics.rebuildChunk(chunk);
         }
 
         return replaced;

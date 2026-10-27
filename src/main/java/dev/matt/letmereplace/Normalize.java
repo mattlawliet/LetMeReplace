@@ -73,6 +73,14 @@ public final class Normalize {
      * {@code axis} is legal on every one of these blocks in all three values, they hold no block
      * entity, and no other property is touched.
      */
+    /** The whole gesture as the confirm screen takes it, so every caller words it the same. */
+    public static Commit commit(LitematicaSchematic schematic,
+                                fi.dy.masa.litematica.materials.MaterialListBase materialList) {
+        Census census = Census.of(schematic);
+        return new Commit("Normalize wood orientation", schematic, materialList, plan(census),
+                notes(census), "Turn %d upright");
+    }
+
     public static Swap.Plan plan(Census census) {
         Map<BlockState, BlockState> mapping = new LinkedHashMap<>();
         int replaced = 0;
@@ -111,6 +119,7 @@ public final class Normalize {
     private static String name(Block block) {
         Identifier id = BuiltInRegistries.BLOCK.getKey(block);
 
-        return id == null ? block.getDescriptionId() : id.getPath();
+        // The in-game name, as the material list shows it - the confirm is read, not parsed.
+        return id == null ? block.getDescriptionId() : block.getName().getString();
     }
 }

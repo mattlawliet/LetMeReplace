@@ -23,8 +23,10 @@ public class LetMeReplace implements ClientModInitializer {
         dev.matt.letmereplace.gui.PreviewOverlay.register();
         Settings.register();
         Recount.register();
+        Schematics.register();
         Share.register();
         dev.matt.letmereplace.gui.WorldMode.register();
+        dev.matt.letmereplace.gui.Tour.register();
         LOGGER.info("LetMeReplace ready");
     }
 }

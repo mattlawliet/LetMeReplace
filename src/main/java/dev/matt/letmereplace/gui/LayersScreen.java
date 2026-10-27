@@ -687,7 +687,7 @@ public class LayersScreen extends GuiRenderLayerEditBase {
      * warning is showing is the other half of the same bug.
      */
     private int buttonRowY() {
-        return textTop() + 5 * 12 + 8;
+        return textTop() + 7 * 12 + 8;          // up to seven lines of counts and warnings
     }
 
     private String selectionKey() {
@@ -746,6 +746,18 @@ public class LayersScreen extends GuiRenderLayerEditBase {
         }
 
         previewedFor = wanted;
+        quiet();
+    }
+
+    /**
+     * Litematica announces every render-range write on the action bar ("Set layer mode to ..."),
+     * and the preview writes it on every change and puts it back on close - the line showed
+     * through between this screen's buttons and outlived it onto the next one. Ours is a borrow,
+     * not the user changing their layers, so it is not news.
+     */
+    private static void quiet() {
+        net.minecraft.client.Minecraft.getInstance().gui.hud
+                .setOverlayMessage(net.minecraft.network.chat.Component.empty(), false);
     }
 
     /** Keeps the user's own render range to put back, once, before we start writing to it. */
@@ -779,6 +791,7 @@ public class LayersScreen extends GuiRenderLayerEditBase {
         if (savedRenderRange != null) {
             copyInto(savedRenderRange, DataManager.getRenderLayerRange());
             savedRenderRange = null;
+            quiet();
         }
 
         previewedFor = "";
@@ -869,10 +882,12 @@ public class LayersScreen extends GuiRenderLayerEditBase {
         this.drawString(context, "removes " + plan.removed() + ", keeps " + plan.kept()
                 + selectionInWords(), x, y, Ui.GREY);
 
+        // Its own line: beside the counts it ran into them once the selection words grew.
         if (plan.blockEntities() > 0) {
+            y += 12;
             this.drawString(context,
                     plan.blockEntities() + " block entities go with them (contents included)",
-                    x + 200, y, Ui.RED);
+                    x, y, Ui.RED);
         }
 
         if (plan.entities() > 0) {

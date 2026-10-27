@@ -75,15 +75,15 @@ public class SaveScreen extends GuiBase implements IConfirmationListener {
 
         y += 30;
 
-        // The checkbox is a button whose label carries its own state - malilib has no checkbox
-        // widget, and a two-state button is less code than inventing one.
         // ponytail: if this turns out to be set-once, demote it to a config toggle and this
         // whole screen collapses back to malilib's GuiTextInput.
-        this.addButton(new ButtonGeneric(x, y, fieldWidth, 20, besideLabel()), this::onToggleBeside);
+        this.addButton(new CheckButton(x, y, fieldWidth, "Also place the original beside it",
+                () -> placeOriginalBeside), (button, mouseButton) -> placeOriginalBeside = !placeOriginalBeside);
 
-        y += 22;
+        y += 18;
 
-        this.addButton(new ButtonGeneric(x, y, fieldWidth, 20, trimLabel()), this::onToggleTrim);
+        this.addButton(new CheckButton(x, y, fieldWidth, "Shrink the box to what is left",
+                () -> trimToContents), (button, mouseButton) -> trimToContents = !trimToContents);
 
         y = boxTop() + boxHeight() - 26;
         int centreX = this.width / 2;
@@ -91,24 +91,6 @@ public class SaveScreen extends GuiBase implements IConfirmationListener {
         this.addButton(new ButtonGeneric(centreX - 104, y, 100, 20, "Save"), this::onSave);
         this.addButton(new ButtonGeneric(centreX + 4, y, 100, 20, "Cancel"),
                 (button, mouseButton) -> this.closeGui(true));
-    }
-
-    private String besideLabel() {
-        return (placeOriginalBeside ? "[x] " : "[ ] ") + "also place the original beside this";
-    }
-
-    private void onToggleBeside(ButtonBase button, int mouseButton) {
-        placeOriginalBeside = !placeOriginalBeside;
-        button.setDisplayString(besideLabel());
-    }
-
-    private String trimLabel() {
-        return (trimToContents ? "[x] " : "[ ] ") + "also shrink the box to what is left";
-    }
-
-    private void onToggleTrim(ButtonBase button, int mouseButton) {
-        trimToContents = !trimToContents;
-        button.setDisplayString(trimLabel());
     }
 
     private void onSave(ButtonBase button, int mouseButton) {
@@ -184,7 +166,7 @@ public class SaveScreen extends GuiBase implements IConfirmationListener {
     }
 
     private int boxHeight() {
-        return 172;
+        return 164;
     }
 
     private int boxLeft() {
